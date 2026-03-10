@@ -1,0 +1,7 @@
+name: guitarrecordings
+splits:
+  train: /absolute/path/to/GuitarRecordings/train
+  valid: /absolute/path/to/GuitarRecordings/test # if no validation is provided the script falls back to random splitting of the training set
+  test: /absolute/path/to/GuitarRecordings/test #this is only for separation, you should change that if you only need to do inference.
+manifest_output: data/manifests/guitarrecordings.json
+

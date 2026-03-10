@@ -1,0 +1,47 @@
+# Artifacts directory (your training outputs)
+artifacts/
+
+# Conda environment lock files (if using environment.yml)
+*.lock
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# mypy / type checker cache
+.mypy_cache/
+
+# Package build artifacts
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Data and outputs (adjust if you want to track some of these)
+data/manifests/
+data/metadata/
+
+# Logs
+logs/
+*.log
+
+# Weights and checkpoints
+*.ckpt
+*.pt
+*.pth
+*.safetensors

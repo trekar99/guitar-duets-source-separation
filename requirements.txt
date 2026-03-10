@@ -1,0 +1,15 @@
+asteroid
+einops
+julius
+matplotlib
+museval
+numpy<2
+omegaconf
+openunmix
+PyYAML
+scipy
+threadpoolctl
+tqdm
+mido
+pandas
+requests
