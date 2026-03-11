@@ -19,6 +19,7 @@ class TrainConfig:
     learning_rate: float = 3e-4
     use_sum_loss: bool = False
     checkpoint_interval: int = 5
+    use_notes: bool = False
 
 
 def build_augmentation(device: torch.device) -> nn.Sequential:
@@ -37,7 +38,7 @@ def prepare_batch(batch: tuple[torch.Tensor, torch.Tensor], device: torch.device
     return mixture, sources, notes
 
 
-def train_one_epoch(model, dataloader, optimizer, loss_fn, device, augmentation=None, use_sum_loss=False):
+def train_one_epoch(model, dataloader, optimizer, loss_fn, device, augmentation=None, use_sum_loss=False, use_notes=False):
     model.train()
     alpha = 0.7
     beta = 0.3
@@ -48,7 +49,7 @@ def train_one_epoch(model, dataloader, optimizer, loss_fn, device, augmentation=
     for batch in progress:
         mixture, labels, notes = prepare_batch(batch, device=device, augmentation=augmentation)
         optimizer.zero_grad()
-        outputs = model(mixture, notes)
+        outputs = model(mixture, notes) if use_notes else model(mixture)
         outputs = outputs.view(outputs.size(0), 2, 2, outputs.size(-1))
         labels = center_trim(labels, outputs)
         loss = loss_fn(outputs, labels)
@@ -67,7 +68,7 @@ def train_one_epoch(model, dataloader, optimizer, loss_fn, device, augmentation=
     return running_loss / max(steps, 1)
 
 
-def evaluate_validation(model, dataloader, loss_fn, device):
+def evaluate_validation(model, dataloader, loss_fn, device, use_notes=False):
     model.eval()
     running_loss = 0.0
     steps = 0
@@ -80,7 +81,7 @@ def evaluate_validation(model, dataloader, loss_fn, device):
             notes = notes.to(device)
             inputs = batch_sources[:, 0, :, :]
             labels = batch_sources[:, 1:, :, :]
-            outputs = model(inputs, notes)
+            outputs = model(inputs, notes) if use_notes else model(inputs)
             outputs = outputs.view(outputs.size(0), 2, 2, outputs.size(-1))
             labels = center_trim(labels, outputs)
             loss = loss_fn(outputs, labels)
@@ -111,8 +112,9 @@ def train_model(model, train_loader, valid_loader, checkpoints_dir, log_dir, con
             device,
             augmentation=augmentation,
             use_sum_loss=config.use_sum_loss,
+            use_notes=config.use_notes,
         )
-        valid_loss = evaluate_validation(model, valid_loader, loss_fn, device)
+        valid_loss = evaluate_validation(model, valid_loader, loss_fn, device, use_notes=config.use_notes)
         metrics = {
             "epoch": epoch,
             "train_loss": train_loss,

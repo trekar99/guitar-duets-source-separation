@@ -1,9 +1,6 @@
-# Copyright (c) 2019-present, Meta, Inc.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# First author is Simon Rouard.
+# Adapted from Demucs (https://github.com/facebookresearch/demucs)
+# Copyright (c) Facebook, Inc. and its affiliates.
+# Licensed under the MIT License.
 
 import random
 import typing as tp

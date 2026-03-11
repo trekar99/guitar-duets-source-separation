@@ -1,5 +1,5 @@
 run:
-  name: train_guitarrecordings
+  name: train_guitarrecordings_time_freq
 dataset:
   manifest: data/manifests/guitarrecordings.json
   train_split: train
@@ -10,6 +10,8 @@ model:
   name: htdemucs
   kwargs:
     segment: 4
+    time_conditioning: true
+    freq_conditioning: true
     sources:
       - guitar1
       - guitar2
@@ -19,6 +21,5 @@ training:
   epochs: 300
   batch_size: 4
   learning_rate: 0.0003
-  checkpoint_interval: 2
+  checkpoint_interval: 5
   use_sum_loss: false
-

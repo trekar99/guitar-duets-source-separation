@@ -29,12 +29,21 @@ def create_tensor_for_segment(csv_path: str, segment_start: int, segment_end: in
 
 
 class GuitarDataset(Dataset):
-    def __init__(self, manifest_entries: list[dict], sample_length: int, sample_rate: int = 44100, stride: int = 44100, normalize: bool = False):
+    def __init__(
+        self,
+        manifest_entries: list[dict],
+        sample_length: int,
+        sample_rate: int = 44100,
+        stride: int = 44100,
+        normalize: bool = False,
+        use_notes: bool = False,
+    ):
         self.entries = manifest_entries
         self.sample_rate = sample_rate
         self.sample_length = sample_length * sample_rate
         self.stride = stride
         self.normalize = normalize
+        self.use_notes = use_notes
         self.num_examples: list[int] = []
 
         for entry in self.entries:
@@ -59,7 +68,12 @@ class GuitarDataset(Dataset):
             mixture, _ = torchaudio.load(entry["mix"], frame_offset=offset, num_frames=num_frames)
             guitar1, _ = torchaudio.load(entry["sources"]["guitar1"], frame_offset=offset, num_frames=num_frames)
             guitar2, _ = torchaudio.load(entry["sources"]["guitar2"], frame_offset=offset, num_frames=num_frames)
-            notes = create_tensor_for_segment(entry["notes_csv"], segment_start=offset, segment_end=offset + num_frames)
+            if self.use_notes:
+                if not entry.get("notes_csv"):
+                    raise FileNotFoundError(f"Missing notes.csv for conditioned training: {entry['track_name']}")
+                notes = create_tensor_for_segment(entry["notes_csv"], segment_start=offset, segment_end=offset + num_frames)
+            else:
+                notes = torch.zeros((256, num_frames), dtype=torch.uint8)
             example = torch.stack([mixture, guitar1, guitar2])
 
             if self.normalize:

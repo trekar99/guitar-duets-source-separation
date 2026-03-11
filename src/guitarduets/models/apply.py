@@ -1,8 +1,7 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
+# Adapted from Demucs (https://github.com/facebookresearch/demucs)
+# Copyright (c) Facebook, Inc. and its affiliates.
+# Licensed under the MIT License.
+
 """
 Code to apply a model to a mix. It will handle chunking with overlaps and
 inteprolation between chunks, as well as the "shift trick".
@@ -269,8 +268,11 @@ def apply_model(model: tp.Union[BagOfModels, Model],
         assert isinstance(mix, TensorChunk)
         padded_mix = mix.padded(valid_length).to(device)
         with th.no_grad():
-            padded_mix_wav = padded_mix[:, :2, :]
-            padded_mix_notes = padded_mix[:, 2:, :]
-            out = model(padded_mix_wav, padded_mix_notes)
+            if getattr(model, "note_conditioning", False):
+                padded_mix_wav = padded_mix[:, :2, :]
+                padded_mix_notes = padded_mix[:, 2:, :]
+                out = model(padded_mix_wav, padded_mix_notes)
+            else:
+                out = model(padded_mix)
         assert isinstance(out, th.Tensor)
         return center_trim(out, length)

@@ -1,26 +1,41 @@
 # GuitarDuets Repository
 
-This repo is the repo of the publication Classical Guitar Duet Separation using GuitarDuets -- a Dataset of Real and Synthesized Guitar Recordings
+This repo is the code repository of the publication:
 
-It supports four main jobs:
+Classical Guitar Duet Separation using GuitarDuets -- a Dataset of Real and Synthesized Guitar Recordings
 
-1. Build a manifest of the dataset.
+- Authors: Marios Glytsos, Christos Garoufis, Athanasia Zlatintsi, Petros Maragos
+- Conference: 25th International Society for Music Information Retrieval Conference (ISMIR 2024)
+
+It supports three main jobs:
+
 2. Train a model.
 3. Run separation with a saved checkpoint.
 4. Evaluate the separated files with SDR / SIR / ISR / SAR / SI-SDR.
 
-## Main folders
+## Install the environment
 
-- `src/deguithybrid/`: the actual Python code
-- `scripts/`: the commands you run
-- `configs/`: the settings you edit
-- `data/`: metadata and manifests
-- `artifacts/`: outputs such as checkpoints, predictions, logs, and metrics
-- `archive/`: old scripts and old experiment logs copied from the thesis code
+Create the Conda environment with:
 
-## What the dataset should look like
+```bash
+conda env create -f environment.yml
+conda activate guitarduets
+```
 
-For training and evaluation, the code expects the data to be arranged by track.
+## Dataset
+
+The dataset can be found on Zenodo:
+
+[GuitarDuets](https://zenodo.org/records/12802440)
+
+Description:
+
+GuitarDuets is a dataset of classical guitar duet recordings with MIDI annotations. It contains around three hours of real and synthesized classical guitar duet recordings. The synthesized duets include note-level MIDI annotations. The dataset was recorded with four different classical guitars to increase timbral diversity. Some tracks were replayed with different guitars for the same reason. The recordings were made in a quiet acoustically treated room using a pair of Presonus PM-2 microphones, one for each guitar. A dedicated leakage-free test set of 7 tracks was also recorded. The files are provided as 44.1 kHz, 16-bit stereo WAV files.
+
+
+## Expected track format
+
+For training and evaluation, the code expects the dataset to be organized by track.
 
 Each track should be one folder.
 
@@ -34,159 +49,127 @@ Track Name/
 └── notes.csv
 ```
 
-Training and separation both expect a `notes.csv` file in each track folder.
+`notes.csv` contains note annotations aligned with the audio.
 
-The required columns are:
+The important columns are:
 
-- `start_time`
-- `end_time`
-- `instrument`
-- `note`
+- `start_time`: the sample index where the note starts
+- `end_time`: the sample index where the note ends
+- `instrument`: which guitar plays the note
+  - `1` means `guitar1`
+  - `2` means `guitar2`
+- `note`: the MIDI pitch number
 
-Note start time and end time are in samples. 
+The audio is sampled at `44100` Hz, so for example:
 
+- `start_time = 44100` means the note starts at 1 second
+- `end_time = 88200` means the note ends at 2 seconds
 
-## How the repo knows which files belong to train / valid / test
+## Dataset split config
 
-The repo does not guess this by itself.
+You first need to set the dataset paths in:
 
-You define it in:
-
-[configs/datasets/guitarrecordings.yaml](/Users/mariosgly/Downloads/Python Scripts/GuitarDuets/deguithybridtrans/GuitarDuets/configs/datasets/guitarrecordings.yaml)
-
-That file points to the root folders for each split.
+[configs/datasets/guitarrecordings.yaml](configs/datasets/guitarrecordings.yaml)
 
 Example:
 
 ```yaml
 name: guitarrecordings
 splits:
-  train: /path/to/GuitarRecordings/train
-  valid: /path/to/GuitarRecordings/valid
-  test: /path/to/GuitarRecordings/test
+  train: /absolute/path/to/GuitarRecordings/train
+  valid: /absolute/path/to/GuitarRecordings/test # if no validation is provided the script falls back to random splitting of the training set
+  test: /absolute/path/to/GuitarRecordings/test # this is only for separation, you should change that if you only need to do inference/evaluation
 manifest_output: data/manifests/guitarrecordings.json
 ```
 
-If you do not define `valid`, the training script falls back to a random split from the training set.
-
-## Files you edit before training
-
-### 1. Dataset config
-
-Edit:
-
-[configs/datasets/guitarrecordings.yaml](/Users/mariosgly/Downloads/Python Scripts/GuitarDuets/deguithybridtrans/GuitarDuets/configs/datasets/guitarrecordings.yaml)
-
-You change:
-
-- where the train data lives
-- where the valid data lives, if you have it
-- where the test data lives
-
-### 2. Experiment config
-
-Edit:
-
-[configs/experiments/train_guitarrecordings.yaml](/Users/mariosgly/Downloads/Python Scripts/GuitarDuets/deguithybridtrans/GuitarDuets/configs/experiments/train_guitarrecordings.yaml)
-
-You change:
-
-- the run name
-- whether normalization is on
-- which model to use
-- segment length
-- epochs
-- batch size
-- learning rate
-
-## What happens before training
-
-Before training, you run:
+After you set these paths, run:
 
 ```bash
 python scripts/build_metadata.py --config configs/datasets/guitarrecordings.yaml
 ```
 
-This scans the dataset folders and creates a manifest JSON file.
+This creates the manifest file used by the training, separation, and evaluation scripts.
 
-That manifest contains:
+## Experiment config
 
-- track name
-- split
-- path to the mix
-- path to the two guitars
-- sample rate
-- track length
-- mean
-- standard deviation
+Then you need to set the experiment configuration, for example:
 
-The manifest is then used by the training and evaluation scripts.
+```yaml
+run:
+  name: train_guitarrecordings_time_freq
+dataset:
+  manifest: data/manifests/guitarrecordings.json
+  train_split: train
+  valid_split: valid
+  test_split: test
+  normalize: true
+model:
+  name: htdemucs
+  kwargs:
+    segment: 4
+    time_conditioning: true
+    freq_conditioning: true
+    sources:
+      - guitar1
+      - guitar2
+audio:
+  segment_seconds: 4
+```
 
-## How to run training
+These settings should be set correctly depending on the version of the model that you want to train or evaluate, and depending on which branch conditioning version you want to use.
 
-From the reorganized repo folder, run:
+## Train
+
+Run:
 
 ```bash
-python scripts/train.py --config configs/experiments/train_guitarrecordings.yaml
+python scripts/train.py --config configs/experiments/train_guitarrecordings_time_freq.yaml
 ```
 
-This will:
+## Separate
 
-- load the manifest
-- build the model
-- create the dataloaders
-- train the model
-- save checkpoints
-- save the training history
-
-## Where training outputs go
-
-Training outputs are saved here:
-
-- checkpoints: `artifacts/checkpoints/<run_name>/`
-- history/logs: `artifacts/logs/<run_name>/`
-
-Example:
-
-```text
-artifacts/checkpoints/train_guitarrecordings/best.pt
-artifacts/checkpoints/train_guitarrecordings/epoch_004.pt
-artifacts/logs/train_guitarrecordings/history.json
-```
-
-## How to run separation later
-
-Once you have a checkpoint, run:
+When you have a checkpoint model, run:
 
 ```bash
-python scripts/separate.py --config configs/experiments/eval_guitarrecordings.yaml --checkpoint artifacts/checkpoints/train_guitarrecordings/best.pt
+python scripts/separate.py --config configs/experiments/eval_guitarrecordings_time_freq.yaml --checkpoint artifacts/checkpoints/train_guitarrecordings_time_freq/best.pt
 ```
 
-This writes separated audio files to:
+This will separate the tracks that are defined in your `test` split in the YAML file you used to build the metadata, and store the separated WAV files in `artifacts/`.
 
-`artifacts/predictions/<run_name>/<checkpoint_name>/`
+## Evaluate
 
-## How to run evaluation later
-
-Once the predictions exist, run:
+Then run:
 
 ```bash
-python scripts/evaluate.py --config configs/experiments/eval_guitarrecordings.yaml --predictions artifacts/predictions/train_guitarrecordings/best
+python scripts/evaluate.py --config configs/experiments/eval_guitarrecordings_time_freq.yaml --predictions artifacts/predictions/train_guitarrecordings_time_freq/best
 ```
 
-This writes metrics to:
+This will calculate the metrics and write the results in `artifacts/`.
 
-`artifacts/metrics/<run_name>/<checkpoint_name>/`
 
-## Simple summary
+## Citation
 
-If someone else uses this repo, the main thing they need to know is:
+If you use this work in your research, please cite:
 
-- put each song in its own folder
-- each song folder must contain `mix`, `guitar1`, and `guitar2` audio files
-- each song folder must also contain `notes.csv`
-- set the dataset paths in the YAML config
-- build the manifest
-- train
-- separate
-- evaluate
+BibTeX:
+
+```bibtex
+@inproceedings{glytsos2024guitarduets,
+  author = {Glytsos, Marios and Garoufis, Christos and Zlatintsi, Athanasia and Maragos, Petros},
+  title = {Classical Guitar Duet Separation using GuitarDuets -- a Dataset of Real and Synthesized Guitar Recordings},
+  booktitle = {Proceedings of the 25th International Society for Music Information Retrieval Conference (ISMIR)},
+  year = {2024},
+  month = nov,
+  pages = {95--102}
+}
+```
+
+
+THIRD-PARTY NOTICES
+===================
+
+This repository contains code adapted from or copied from the following projects:
+
+Demucs (https://github.com/facebookresearch/demucs)
+Copyright (c) Facebook, Inc. and its affiliates.
+Licensed under the MIT License.

@@ -15,8 +15,6 @@ def build_track_entry(track_dir: str | Path, split: str) -> dict:
     guitar1_path = find_audio_file(track_path, "guitar1")
     guitar2_path = find_audio_file(track_path, "guitar2")
     notes_csv_path = track_path / "notes.csv"
-    if not notes_csv_path.exists():
-        raise FileNotFoundError(f"Missing notes.csv in {track_path}")
 
     waveform, sample_rate = torchaudio.load(str(mix_path))
     mean = torch.mean(waveform).item()
@@ -31,7 +29,7 @@ def build_track_entry(track_dir: str | Path, split: str) -> dict:
             "guitar1": str(guitar1_path.resolve()),
             "guitar2": str(guitar2_path.resolve()),
         },
-        "notes_csv": str(notes_csv_path.resolve()),
+        "notes_csv": str(notes_csv_path.resolve()) if notes_csv_path.exists() else None,
         "samplerate": sample_rate,
         "length": int(waveform.shape[-1]),
         "mean": mean,

@@ -1,64 +1,99 @@
-import os
+from __future__ import annotations
+
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
 
 
-def makehistograms(name):
-    metrics_file = '/gpu-data3/mgly/deguitht/' + name + '/temp/metrics.txt'
 
-    # Specify the directory to save the plots
-    save_dir = 'plots/' + name
-    os.makedirs(save_dir, exist_ok=True)
+def make_histograms(metrics_file: str | Path):
 
-    # Read the file
-    with open(metrics_file, 'r') as file:
-        data = file.readlines()
+    metrics_file = Path(metrics_file)
 
-    all_sdr_values = []
-    for line in data:
-        item = json.loads(line)
-        guitar1_metrics = item['metrics']['guitar1']
-        guitar2_metrics = item['metrics']['guitar2']
+    if not metrics_file.exists():
+        raise FileNotFoundError(metrics_file)
 
-        for song in guitar1_metrics.values():
-            all_sdr_values.extend(song['SDR'])
+    # Infer run + checkpoint from artifact path
+    checkpoint_name = metrics_file.parent.name
+    run_name = metrics_file.parent.parent.name
 
-        for song in guitar2_metrics.values():
-            all_sdr_values.extend(song['SDR'])
+    save_dir = Path("artifacts") / "plots" / run_name / checkpoint_name
+    save_dir.mkdir(parents=True, exist_ok=True)
 
-    # Calculate minimum and maximum SDR values
-    min_sdr = int(min(all_sdr_values))
-    max_sdr = int(max(all_sdr_values))
+    with open(metrics_file) as f:
+        metrics = json.load(f)
 
+    sources = list(metrics.keys())
+    metric_names = ["SDR", "SI-SDR", "SIR", "ISR", "SAR"]
+    print(sources)
 
-    # Parse the dictionaries
-    for line in data:
-        item = json.loads(line)
-        epoch = item['epoch']
-        guitar1_metrics = item['metrics']['guitar1']
-        guitar2_metrics = item['metrics']['guitar2']
+    for metric in metric_names:
 
-        guitar1_sdr = []
-        for song in guitar1_metrics.values():
-            guitar1_sdr.extend(song['SDR'])
+        source_values = {}
 
-        guitar2_sdr = []
-        for song in guitar2_metrics.values():
-            guitar2_sdr.extend(song['SDR'])
+        for source in sources:
 
-        # Create histograms
-        bin_edges = np.arange(min_sdr, max_sdr + 2, 1)   # Customize the bin range as needed
+            values = []
+
+            for track_metrics in metrics[source].values():
+                vals = track_metrics.get(metric)
+
+                if vals is None:
+                    continue
+
+                values.extend(v for v in vals if np.isfinite(v))
+
+            source_values[source] = values
+
+        # Skip metric if empty
+        if not any(len(v) for v in source_values.values()):
+            continue
+
+        all_vals = np.concatenate(
+            [np.array(v) for v in source_values.values() if len(v) > 0]
+        )
+
+        min_val = int(np.floor(all_vals.min()))
+        max_val = int(np.ceil(all_vals.max()))
+
+        bin_edges = np.arange(min_val, max_val + 1, 1)
 
         fig, ax = plt.subplots()
-        ax.hist(guitar1_sdr, bins=bin_edges, alpha=0.5, label='Guitar1')
-        ax.hist(guitar2_sdr, bins=bin_edges, alpha=0.5, label='Guitar2')
-        ax.set_xlabel('SDR')
-        ax.set_ylabel('Frequency')
-        ax.set_title(f'Histogram for Epoch {epoch}')
+
+        for source, values in source_values.items():
+            if len(values) == 0:
+                continue
+
+            ax.hist(
+                values,
+                bins=bin_edges,
+                alpha=0.5,
+                label=source,
+            )
+
+        ax.set_xlabel(metric)
+        ax.set_ylabel("Frequency")
+        ax.set_title(f"{metric} histogram")
         ax.legend()
-        plt.grid()
-        plt.savefig(os.path.join(save_dir, f'hist_epoch_{epoch}.png'))
+        ax.grid(True)
+
+        out_file = save_dir / f"{metric}_histogram.png"
+
+        plt.savefig(out_file)
         plt.close()
 
-    print(f"Plots saved to directory: {save_dir}")
+        print(f"Saved {out_file}")
+
+    print(f"\nHistograms saved in {save_dir}")
+    
+    
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--metrics-file", required=True)
+    args = parser.parse_args()
+
+    make_histograms(args.metrics_file)

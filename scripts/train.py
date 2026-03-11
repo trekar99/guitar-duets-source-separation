@@ -18,7 +18,27 @@ from guitarduets.utils.io import load_config
 
 def describe_dataset(label: str, entries: list[dict]) -> None:
     total_seconds = sum(entry["length"] / entry["samplerate"] for entry in entries)
-    print(f"{label}: {len(entries)} tracks, {total_seconds / 60:.2f} minutes")
+    notes_available = sum(1 for entry in entries if entry.get("notes_csv"))
+    notes_suffix = f", notes_csv on {notes_available}/{len(entries)} tracks" if entries else ""
+    print(f"{label}: {len(entries)} tracks, {total_seconds / 60:.2f} minutes{notes_suffix}")
+
+
+def conditioning_label(model_kwargs: dict) -> str:
+    time_conditioning = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
+    freq_conditioning = model_kwargs.get("freq_conditioning", False)
+    if time_conditioning and freq_conditioning:
+        return "time+freq"
+    if time_conditioning:
+        return "time"
+    if freq_conditioning:
+        return "freq"
+    return "none"
+
+
+def uses_notes(model_kwargs: dict) -> bool:
+    time_conditioning = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
+    freq_conditioning = model_kwargs.get("freq_conditioning", False)
+    return time_conditioning or freq_conditioning
 
 
 def main() -> None:
@@ -27,6 +47,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = load_config(args.config)
+    model_kwargs = config["model"].get("kwargs", {})
     manifest_entries = load_manifest(repo_root / config["dataset"]["manifest"])
     train_entries = [entry for entry in manifest_entries if entry["split"] == config["dataset"]["train_split"]]
     valid_entries = [entry for entry in manifest_entries if entry["split"] == config["dataset"]["valid_split"]]
@@ -40,6 +61,7 @@ def main() -> None:
     print(f"epochs: {config['training']['epochs']}")
     print(f"learning rate: {config['training'].get('learning_rate', 3e-4)}")
     print(f"use sum loss: {config['training'].get('use_sum_loss', False)}")
+    print(f"conditioning: {conditioning_label(config['model'].get('kwargs', {}))}")
     print(f"normalize: {config['dataset']['normalize']}")
     print(f"manifest entries: {len(manifest_entries)}")
     describe_dataset("train split", train_entries)
@@ -49,21 +71,36 @@ def main() -> None:
         print("valid split: not provided, using random split from train split")
 
     if not valid_entries:
-        dataset = GuitarDataset(train_entries, sample_length=config["audio"]["segment_seconds"], normalize=config["dataset"]["normalize"])
+        dataset = GuitarDataset(
+            train_entries,
+            sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"],
+            use_notes=uses_notes(model_kwargs),
+        )
         train_size = int(len(dataset) * 0.8)
         valid_size = len(dataset) - train_size
         train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
         print(f"random split samples: train={len(train_dataset)} valid={len(valid_dataset)}")
     else:
-        train_dataset = GuitarDataset(train_entries, sample_length=config["audio"]["segment_seconds"], normalize=config["dataset"]["normalize"])
-        valid_dataset = GuitarDataset(valid_entries, sample_length=config["audio"]["segment_seconds"], normalize=config["dataset"]["normalize"])
+        train_dataset = GuitarDataset(
+            train_entries,
+            sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"],
+            use_notes=uses_notes(model_kwargs),
+        )
+        valid_dataset = GuitarDataset(
+            valid_entries,
+            sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"],
+            use_notes=uses_notes(model_kwargs),
+        )
         print(f"dataset samples: train={len(train_dataset)} valid={len(valid_dataset)}")
 
     train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
     valid_loader = DataLoader(valid_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
     print(f"dataloader batches: train={len(train_loader)} valid={len(valid_loader)}")
 
-    model = build_model(config["model"]["name"], config["model"].get("kwargs", {}))
+    model = build_model(config["model"]["name"], model_kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
@@ -80,6 +117,7 @@ def main() -> None:
         learning_rate=config["training"].get("learning_rate", 3e-4),
         use_sum_loss=config["training"].get("use_sum_loss", False),
         checkpoint_interval=config["training"].get("checkpoint_interval", 5),
+        use_notes=uses_notes(model_kwargs),
     )
     history = train_model(
         model,

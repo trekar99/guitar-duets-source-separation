@@ -1,9 +1,7 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-# All rights reserved.
-#
-# This source code is licensed under the license found in the
-# LICENSE file in the root directory of this source tree.
-# First author is Simon Rouard.
+# Adapted from Demucs (https://github.com/facebookresearch/demucs)
+# Copyright (c) Facebook, Inc. and its affiliates.
+# Licensed under the MIT License.
+
 """
 This code contains the spectrogram and Hybrid version of Demucs.
 """
@@ -145,6 +143,9 @@ class HTDemucs(nn.Module):
         samplerate=44100,
         segment=10,
         use_train_segment=True,
+        note_conditioning=False,
+        time_conditioning=None,
+        freq_conditioning=False,
     ):
         """
         Args:
@@ -249,6 +250,11 @@ class HTDemucs(nn.Module):
         self.samplerate = samplerate
         self.segment = segment
         self.use_train_segment = use_train_segment
+        if time_conditioning is None:
+            time_conditioning = note_conditioning
+        self.time_conditioning = time_conditioning
+        self.freq_conditioning = freq_conditioning
+        self.note_conditioning = self.time_conditioning or self.freq_conditioning
         self.nfft = nfft
         self.hop_length = nfft // 4
         self.wiener_iters = wiener_iters
@@ -320,6 +326,10 @@ class HTDemucs(nn.Module):
             enc = HEncLayer(
                 chin_z, chout_z, dconv=dconv_mode & 1, context=context_enc, **kw
             )
+            if self.freq_conditioning and index == 2:
+                enc = HEncLayer(
+                    98, chout_z, dconv=dconv_mode & 1, context=context_enc, **kw
+                )
             if freq:
                 tenc = HEncLayer(
                     chin,
@@ -329,7 +339,7 @@ class HTDemucs(nn.Module):
                     empty=last_freq,
                     **kwt
                 )
-                if index == 3:
+                if self.time_conditioning and index == 3:
                     tenc = HEncLayer(
                         448,
                         chout,
@@ -356,6 +366,14 @@ class HTDemucs(nn.Module):
                 context=context,
                 **kw_dec
             )
+            if self.freq_conditioning and index == 2:
+                dec = HDecLayer(
+                    chout_z, 98, dconv=dconv_mode & 2, last=index == 0, context=context, **kw_dec
+                )
+            if self.freq_conditioning and index == 1:
+                dec = HDecLayer(
+                    98, chin_z, dconv=dconv_mode & 2, last=index == 0, context=context, **kw_dec
+                )
             if multi:
                 dec = MultiWrap(dec, multi_freqs)
             if freq:
@@ -368,7 +386,7 @@ class HTDemucs(nn.Module):
                     context=context,
                     **kwt
                 )
-                if index == 3:
+                if self.time_conditioning and index == 3:
                     tdec = HDecLayer(
                         chout,
                         448,
@@ -378,7 +396,7 @@ class HTDemucs(nn.Module):
                         context=context,
                         **kwt
                     )
-                if index == 2:
+                if self.time_conditioning and index == 2:
                     tdec = HDecLayer(
                         448,
                         chin,
@@ -568,7 +586,7 @@ class HTDemucs(nn.Module):
                     f"training length {training_length}")
         return training_length
 
-    def forward(self, mix, notes):
+    def forward(self, mix, notes=None):
         length = mix.shape[-1]
         length_pre_pad = None
         if self.use_train_segment:
@@ -579,7 +597,8 @@ class HTDemucs(nn.Module):
                 if mix.shape[-1] < training_length:
                     length_pre_pad = mix.shape[-1]
                     mix = F.pad(mix, (0, training_length - length_pre_pad))
-                    notes = F.pad(notes, (0, training_length - length_pre_pad))
+                    if notes is not None:
+                        notes = F.pad(notes, (0, training_length - length_pre_pad))
         z = self._spec(mix)
         mag = self._magnitude(z).to(mix.device)
         x = mag
@@ -611,9 +630,9 @@ class HTDemucs(nn.Module):
                 lengths_t.append(xt.shape[-1])
                 tenc = self.tencoder[idx]
                 xt = tenc(xt)
-                if idx == 2:
+                if self.time_conditioning and notes is not None and idx == 2:
                     downsampled_notes_time = downsample_binary_tensor(notes, xt.shape[-1])
-                    xt = torch.cat((xt, downsampled_notes_time), dim=1)
+                    xt = torch.cat((xt, downsampled_notes_time.to(xt.dtype)), dim=1)
                 if not tenc.empty:
                     # save for skip connection
                     saved_t.append(xt)
@@ -628,6 +647,10 @@ class HTDemucs(nn.Module):
                 frs = torch.arange(x.shape[-2], device=x.device)
                 emb = self.freq_emb(frs).t()[None, :, :, None].expand_as(x)
                 x = x + self.freq_emb_scale * emb
+            if self.freq_conditioning and notes is not None and idx == 1:
+                downsampled_notes_freq = downsample_binary_tensor(notes, x.shape[-1]).to(x.dtype)
+                downsampled_notes_freq = downsampled_notes_freq.view(B, 2, 128, -1)
+                x = torch.cat((x, downsampled_notes_freq), dim=1)
 
             saved.append(x)
         if self.crosstransformer:
