@@ -50,3 +50,7 @@ logs/
 #some artifacts from my repo
 configs/datasets/to_test.yaml
 data/**/*.json
+
+#other things
+*.sh
+check.py

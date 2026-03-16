@@ -164,6 +164,10 @@ BibTeX:
 }
 ```
 
+## Scope
+
+Note: This repository currently supports training and evaluation of the score-informed and unconditional separation models only. Score-informed training expects ground-truth note-level annotations (in the notes.csv format described above) to be available for each track. The joint transcription-separation framework described in the paper, where note estimates are predicted by a separate transcription network and fed into the separator, is not included in this release. We will include it in a future update.
+
 
 THIRD-PARTY NOTICES
 ===================
