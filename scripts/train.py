@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader, random_split
@@ -8,6 +10,8 @@ from torch.utils.data import DataLoader, random_split
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.dataset import GuitarDataset
 from src.data.manifests import load_manifest

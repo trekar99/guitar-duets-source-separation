@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from pathlib import Path
 
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.plotting.metrics import plot_training_history
 

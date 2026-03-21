@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
 
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.metadata import build_manifest_from_split_roots
 from src.utils.io import load_config

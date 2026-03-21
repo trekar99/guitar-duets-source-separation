@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 import torch
 
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.manifests import load_manifest
 from src.inference.separate import separate_tracks
