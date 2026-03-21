@@ -6,11 +6,11 @@ import torch
 from torch import nn
 from tqdm.auto import tqdm
 
-from guitarduets.training.augment import FlipChannels, FlipSign, OppositePanning, Remix, Scale, Shift
-from guitarduets.training.checkpointing import save_checkpoint, save_training_history
-from guitarduets.training.losses import build_pit_l1_loss
-from guitarduets.utils.core import center_trim
-from guitarduets.utils.paths import ensure_dir
+from src.training.augment import FlipChannels, FlipSign, OppositePanning, Remix, Scale, Shift
+from src.training.checkpointing import save_checkpoint, save_training_history
+from src.training.losses import build_pit_l1_loss
+from src.utils.core import center_trim
+from src.utils.paths import ensure_dir
 
 
 @dataclass

@@ -14,12 +14,12 @@ from torch.nn import functional as F
 from fractions import Fraction
 from einops import rearrange
 
-from guitarduets.models.transformer import CrossTransformerEncoder
+from src.models.transformer import CrossTransformerEncoder
 
-from guitarduets.models.demucs import rescale_module
-from guitarduets.models.states import capture_init
-from guitarduets.models.spec import spectro, ispectro
-from guitarduets.models.hdemucs import pad1d, ScaledEmbedding, HEncLayer, MultiWrap, HDecLayer
+from src.models.demucs import rescale_module
+from src.models.states import capture_init
+from src.models.spec import spectro, ispectro
+from src.models.hdemucs import pad1d, ScaledEmbedding, HEncLayer, MultiWrap, HDecLayer
 
 
 def downsample_binary_tensor(tensor, output_length):

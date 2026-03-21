@@ -14,9 +14,9 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from guitarduets.models.demucs import DConv, rescale_module
-from guitarduets.models.states import capture_init
-from guitarduets.models.spec import spectro, ispectro
+from src.models.demucs import DConv, rescale_module
+from src.models.states import capture_init
+from src.models.spec import spectro, ispectro
 
 
 def pad1d(x: torch.Tensor, paddings: tp.Tuple[int, int], mode: str = 'constant', value: float = 0.):

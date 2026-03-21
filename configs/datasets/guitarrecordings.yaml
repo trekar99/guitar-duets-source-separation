@@ -1,7 +1,7 @@
 name: guitarrecordings
 splits:
-  train: /absolute/path/to/GuitarRecordings/train
-  valid: /absolute/path/to/GuitarRecordings/test # if no validation is provided the script falls back to random splitting of the training set
-  test: /absolute/path/to/GuitarRecordings/test #this is only for separation, you should change that if you only need to do inference.
+  train: /home/frederic/Documents/UPF/semester2/MIR/guitar-duets-source-separation/GuitarDuets/Synth
+  valid: /home/frederic/Documents/UPF/semester2/MIR/guitar-duets-source-separation/GuitarDuets/Real/test
+  test: /home/frederic/Documents/UPF/semester2/MIR/guitar-duets-source-separation/GuitarDuets/Real/test
 manifest_output: data/manifests/guitarrecordings.json
 

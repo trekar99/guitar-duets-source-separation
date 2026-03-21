@@ -9,11 +9,11 @@ from _bootstrap import bootstrap
 
 repo_root = bootstrap()
 
-from guitarduets.data.dataset import GuitarDataset
-from guitarduets.data.manifests import load_manifest
-from guitarduets.models.factory import build_model
-from guitarduets.training.engine import TrainConfig, train_model
-from guitarduets.utils.io import load_config
+from src.data.dataset import GuitarDataset
+from src.data.manifests import load_manifest
+from src.models.factory import build_model
+from src.training.engine import TrainConfig, train_model
+from src.utils.io import load_config
 
 
 def describe_dataset(label: str, entries: list[dict]) -> None:

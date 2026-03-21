@@ -5,8 +5,8 @@ from pathlib import Path
 import torch
 import torchaudio
 
-from guitarduets.data.manifests import save_manifest
-from guitarduets.utils.audio import find_audio_file
+from src.data.manifests import save_manifest
+from src.utils.audio import find_audio_file
 
 
 def build_track_entry(track_dir: str | Path, split: str) -> dict:

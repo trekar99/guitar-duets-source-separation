@@ -5,9 +5,9 @@ from pathlib import Path
 import pandas as pd
 import torch
 
-from guitarduets.models.apply import apply_model
-from guitarduets.utils.audio import load_audio, save_audio
-from guitarduets.utils.paths import ensure_dir
+from src.models.apply import apply_model
+from src.utils.audio import load_audio, save_audio
+from src.utils.paths import ensure_dir
 
 
 def create_tensor_for_segment(csv_path: str, segment_start: int, segment_end: int) -> torch.Tensor:

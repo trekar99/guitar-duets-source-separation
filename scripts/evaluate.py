@@ -7,9 +7,9 @@ from _bootstrap import bootstrap
 
 repo_root = bootstrap()
 
-from guitarduets.data.manifests import load_manifest
-from guitarduets.evaluation.metrics import evaluate_predictions
-from guitarduets.utils.io import load_config, save_json
+from src.data.manifests import load_manifest
+from src.evaluation.metrics import evaluate_predictions
+from src.utils.io import load_config, save_json
 
 
 def main() -> None:

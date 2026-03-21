@@ -15,10 +15,10 @@ from torch import nn
 from torch.nn import functional as F
 import tqdm
 
-from guitarduets.models.demucs import Demucs
-from guitarduets.models.hdemucs import HDemucs
-from guitarduets.models.htdemucs import HTDemucs
-from guitarduets.utils.core import center_trim, DummyPoolExecutor
+from src.models.demucs import Demucs
+from src.models.hdemucs import HDemucs
+from src.models.htdemucs import HTDemucs
+from src.utils.core import center_trim, DummyPoolExecutor
 
 Model = tp.Union[Demucs, HDemucs, HTDemucs]
 

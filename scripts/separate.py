@@ -9,10 +9,10 @@ from _bootstrap import bootstrap
 
 repo_root = bootstrap()
 
-from guitarduets.data.manifests import load_manifest
-from guitarduets.inference.separate import separate_tracks
-from guitarduets.models.factory import build_model
-from guitarduets.utils.io import load_config, save_json
+from src.data.manifests import load_manifest
+from src.inference.separate import separate_tracks
+from src.models.factory import build_model
+from src.utils.io import load_config, save_json
 
 
 def load_checkpoint_into_model(model, checkpoint_path):

@@ -1,4 +1,4 @@
-from guitarduets.evaluation.metrics import evaluate_predictions
+from src.evaluation.metrics import evaluate_predictions
 
 __all__ = ["evaluate_predictions"]
 
