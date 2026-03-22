@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from guitarduets.utils.io import save_json
-from guitarduets.utils.paths import ensure_dir
+from utils.io import save_json
+from utils.paths import ensure_dir
 
 
 def save_checkpoint(path: str | Path, model, optimizer, epoch: int, metrics: dict) -> None:

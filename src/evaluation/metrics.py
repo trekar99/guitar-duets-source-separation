@@ -7,9 +7,9 @@ import museval
 import numpy as np
 import torchaudio
 
-from guitarduets.evaluation.sisdr import si_sdr
-from guitarduets.evaluation.summarize import summarize_results
-from guitarduets.utils.audio import find_audio_file
+from evaluation.sisdr import si_sdr
+from evaluation.summarize import summarize_results
+from utils.audio import find_audio_file
 
 
 def _load_stacked_sources(

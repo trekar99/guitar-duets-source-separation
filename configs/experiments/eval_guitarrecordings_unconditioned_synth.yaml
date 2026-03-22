@@ -1,7 +1,7 @@
 run:
-  name: train_guitarrecordings_unconditioned
+  name: train_guitarrecordings_unconditioned_synth
 dataset:
-  manifest: data/manifests/guitarrecordings_real.json
+  manifest: data/manifests/guitarrecordings_synth.json
   train_split: train
   valid_split: valid
   test_split: test

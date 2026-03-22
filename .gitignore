@@ -1,6 +1,10 @@
 # Artifacts directory (your training outputs)
 artifacts/
 
+GuitarDuets/
+.claude/
+
+
 # Conda environment lock files (if using environment.yml)
 *.lock
 

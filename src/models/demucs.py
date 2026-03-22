@@ -10,9 +10,9 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from guitarduets.models.states import capture_init
-from guitarduets.utils.core import center_trim, unfold
-from guitarduets.models.transformer import LayerScale
+from models.states import capture_init
+from utils.core import center_trim, unfold
+from models.transformer import LayerScale
 
 
 class BLSTM(nn.Module):

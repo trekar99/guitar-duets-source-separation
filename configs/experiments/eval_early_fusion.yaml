@@ -1,16 +1,20 @@
 run:
-  name: train_guitarrecordings_unconditioned
+  name: early_fusion
 dataset:
-  manifest: data/manifests/guitarrecordings_real.json
+  manifest: data/manifests/guitarrecordings_early_fusion.json
   train_split: train
-  valid_split: valid
+  valid_split: val
   test_split: test
   normalize: true
 model:
   name: htdemucs
   kwargs:
     segment: 4
+    audio_channels: 2
+    extra_input_channels: 2
     note_conditioning: false
+    time_conditioning: false
+    freq_conditioning: false
     sources:
       - guitar1
       - guitar2

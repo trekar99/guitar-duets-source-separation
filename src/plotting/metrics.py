@@ -4,8 +4,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from guitarduets.utils.io import save_json
-from guitarduets.utils.paths import ensure_dir
+from utils.io import save_json
+from utils.paths import ensure_dir
 
 
 def plot_training_history(history: list[dict], output_dir: str | Path) -> None:

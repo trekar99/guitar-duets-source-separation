@@ -14,12 +14,12 @@ from torch.nn import functional as F
 from fractions import Fraction
 from einops import rearrange
 
-from guitarduets.models.transformer import CrossTransformerEncoder
+from models.transformer import CrossTransformerEncoder
 
-from guitarduets.models.demucs import rescale_module
-from guitarduets.models.states import capture_init
-from guitarduets.models.spec import spectro, ispectro
-from guitarduets.models.hdemucs import pad1d, ScaledEmbedding, HEncLayer, MultiWrap, HDecLayer
+from models.demucs import rescale_module
+from models.states import capture_init
+from models.spec import spectro, ispectro
+from models.hdemucs import pad1d, ScaledEmbedding, HEncLayer, MultiWrap, HDecLayer
 
 
 def downsample_binary_tensor(tensor, output_length):
@@ -146,6 +146,10 @@ class HTDemucs(nn.Module):
         note_conditioning=False,
         time_conditioning=None,
         freq_conditioning=False,
+        # Early-fusion: extra input channels appended to the stereo mix.
+        # These widen ONLY the first encoder layer input; all decoder layers
+        # and the output shape are unchanged.
+        extra_input_channels=0,
     ):
         """
         Args:
@@ -240,6 +244,9 @@ class HTDemucs(nn.Module):
         self.cac = cac
         self.wiener_residual = wiener_residual
         self.audio_channels = audio_channels
+        # extra_input_channels widens ONLY the very first encoder layer.
+        # The decoder output always produces `audio_channels` channels per source.
+        self.extra_input_channels = extra_input_channels
         self.sources = sources
         self.kernel_size = kernel_size
         self.context = context
@@ -268,7 +275,11 @@ class HTDemucs(nn.Module):
         self.tencoder = nn.ModuleList()
         self.tdecoder = nn.ModuleList()
 
-        chin = audio_channels
+        # Include extra_input_channels in the very first encoder input.
+        # After index==0 the loop resets chin/chin_z to use self.audio_channels
+        # only (for decoder skip connections), so the extra channels do NOT
+        # propagate to the output side.
+        chin = audio_channels + extra_input_channels
         chin_z = chin  # number of channels for the freq branch
         if self.cac:
             chin_z *= 2

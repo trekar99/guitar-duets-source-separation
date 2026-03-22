@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from guitarduets.models.demucs import Demucs
-from guitarduets.models.hdemucs import HDemucs
-from guitarduets.models.htdemucs import HTDemucs
+from models.demucs import Demucs
+from models.hdemucs import HDemucs
+from models.htdemucs import HTDemucs
 
 
 def build_model(name: str, kwargs: dict | None = None):

@@ -6,8 +6,8 @@ from _bootstrap import bootstrap
 
 repo_root = bootstrap()
 
-from guitarduets.data.metadata import build_manifest_from_split_roots
-from guitarduets.utils.io import load_config
+from data.metadata import build_manifest_from_split_roots
+from utils.io import load_config
 
 
 def main() -> None:

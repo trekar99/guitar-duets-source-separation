@@ -7,7 +7,7 @@ from _bootstrap import bootstrap
 
 repo_root = bootstrap()
 
-from guitarduets.plotting.metrics import plot_training_history
+from plotting.metrics import plot_training_history
 
 
 def main() -> None:

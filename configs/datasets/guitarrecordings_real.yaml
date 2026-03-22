@@ -1,0 +1,4 @@
+name: guitarrecordings
+splits:
+  test: /Users/ckyirong/Desktop/Masters/sem_2/mir/project/guitar-duets-source-separation/GuitarDuets/Real/test
+manifest_output: data/manifests/guitarrecordings_real.json
