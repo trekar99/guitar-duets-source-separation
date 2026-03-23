@@ -107,6 +107,23 @@ def main() -> None:
     model = build_model(config["model"]["name"], model_kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+
+    checkpoint_path = repo_root / "artifacts" / "checkpoints" / "best_conditioned.pt"
+
+    if checkpoint_path.exists():
+        # map_location ensures it loads correctly even if weights were saved on a different device
+        state_dict = torch.load(checkpoint_path, map_location=device)
+        
+        # If the checkpoint contains only the model weights:
+        model.load_state_dict(state_dict)
+        
+        # If the checkpoint was saved as a dict with 'model_state_dict':
+        # model.load_state_dict(state_dict['model_state_dict'])
+        
+        print(f"Successfully preloaded weights from {checkpoint_path}")
+    else:
+        print(f"Warning: Checkpoint not found at {checkpoint_path}. Training from scratch.")
+
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
     trainable_parameter_count = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
     print(f"device: {device}")

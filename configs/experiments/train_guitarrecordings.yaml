@@ -18,8 +18,8 @@ model:
 audio:
   segment_seconds: 4
 training:
-  epochs: 300
+  epochs: 50
   batch_size: 4
-  learning_rate: 0.0003
-  checkpoint_interval: 5
+  learning_rate: 0.00005 
+  checkpoint_interval: 2
   use_sum_loss: false
