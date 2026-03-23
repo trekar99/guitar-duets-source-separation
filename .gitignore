@@ -1,8 +1,8 @@
-# Artifacts directory (your training outputs)
-artifacts/
+# Outputs (checkpoints, predictions, metrics, logs, plots)
+outputs/
 
-# Conda environment lock files (if using environment.yml)
-*.lock
+# Manifests (generated from build_metadata.py)
+manifests/
 
 # Python bytecode
 __pycache__/
@@ -10,8 +10,9 @@ __pycache__/
 *.pyo
 *.pyd
 
-# mypy / type checker cache
+# Type checker / linter caches
 .mypy_cache/
+.ruff_cache/
 
 # Package build artifacts
 *.egg-info/
@@ -24,6 +25,9 @@ build/
 .venv
 env/
 
+# Conda lock files
+*.lock
+
 # OS
 .DS_Store
 Thumbs.db
@@ -31,10 +35,7 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
-
-# Data and outputs (adjust if you want to track some of these)
-data/manifests/
-data/metadata/
+.cursor/
 
 # Logs
 logs/
@@ -46,13 +47,8 @@ logs/
 *.pth
 *.safetensors
 
+# Dataset (large binary files, download from Zenodo)
+dataset/
 
-#some artifacts from my repo
-configs/datasets/to_test.yaml
-data/**/*.json
-
-#other things
-*.sh
-check.py
-
-GuitarDuets/
+# Notebook checkpoints
+.ipynb_checkpoints/

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.manifests import load_manifest
 from src.evaluation.metrics import evaluate_predictions
@@ -22,17 +19,13 @@ def main() -> None:
     args = parser.parse_args()
 
     config = load_config(args.config)
-    manifest_entries = load_manifest(repo_root / config["dataset"]["manifest"])
-    eval_entries = [
-        entry
-        for entry in manifest_entries
-        if entry["split"] == config["dataset"]["test_split"]
-    ]
+    manifest_entries = load_manifest(repo_root / config["dataset"]["manifest"], resolve_root=repo_root)
+    eval_entries = [e for e in manifest_entries if e["split"] == config["dataset"]["test_split"]]
 
     results, summary = evaluate_predictions(args.predictions, eval_entries)
 
     checkpoint_name = Path(args.predictions).name
-    metrics_dir = repo_root / "artifacts" / "metrics" / config["run"]["name"] / checkpoint_name
+    metrics_dir = repo_root / "outputs" / "metrics" / config["run"]["name"] / checkpoint_name
     metrics_dir.mkdir(parents=True, exist_ok=True)
 
     save_json(metrics_dir / "per_track_metrics.json", results)

@@ -7,31 +7,27 @@ channels:
 dependencies:
   - python=3.11
   - ffmpeg>=4.2
-  - pytorch=2.1.0
-  - torchaudio=2.1.0
+  - pytorch>=2.1
+  - torchaudio>=2.1
   - pytorch-cuda=11.8
-  - cudatoolkit>=11
   - tqdm
   - pip
   - pip:
-    - diffq>=0.2.1
-    - dora-search>=0.1.12
-    - einops
-    - hydra-colorlog>=1.1
-    - hydra-core>=1.1
-    - julius>=0.2.3
-    - lameenc>=1.2
-    - openunmix
-    - museval>=0.4.0
     - asteroid
+    - einops
+    - julius>=0.2.3
     - matplotlib
+    - mido
+    - museval>=0.4.0
     - "numpy<2"
     - omegaconf
-    - scipy
-    - threadpoolctl
+    - openunmix
+    - pandas
     - PyYAML
+    - scipy
     - soundfile
-    - submitit
-    - treetable>=0.2.3
-    - requests
+    - threadpoolctl
+    - ipykernel
+    - ipywidgets
+    - librosa
     - -e .

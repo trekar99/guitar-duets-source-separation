@@ -1,0 +1,9 @@
+# Dataset configuration for GuitarDuets.
+# Update the paths below to point to your local dataset directories.
+# Download from: https://zenodo.org/records/12802440
+name: guitarrecordings
+splits:
+  train: dataset/Synth
+  valid: dataset/Real/test
+  test: dataset/Real/test
+manifest_output: manifests/guitarrecordings.json

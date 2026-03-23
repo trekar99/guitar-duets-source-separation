@@ -20,7 +20,7 @@ def make_histograms(metrics_file: str | Path):
     checkpoint_name = metrics_file.parent.name
     run_name = metrics_file.parent.parent.name
 
-    save_dir = Path("artifacts") / "plots" / run_name / checkpoint_name
+    save_dir = Path("outputs") / "plots" / run_name / checkpoint_name
     save_dir.mkdir(parents=True, exist_ok=True)
 
     with open(metrics_file) as f:

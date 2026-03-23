@@ -1,0 +1,34 @@
+# Score-conditioned HTDemucs (time + frequency branch conditioning).
+# Used for both training and evaluation/separation.
+run:
+  name: conditioned
+
+dataset:
+  manifest: manifests/guitarrecordings.json
+  train_split: train
+  valid_split: valid
+  test_split: test
+  normalize: true
+
+model:
+  name: htdemucs
+  kwargs:
+    segment: 4
+    time_conditioning: true
+    freq_conditioning: true
+    sources:
+      - guitar1
+      - guitar2
+
+audio:
+  segment_seconds: 4
+
+training:
+  epochs: 50
+  batch_size: 4
+  learning_rate: 0.00005
+  checkpoint_interval: 2
+  use_sum_loss: false
+  use_amp: true
+  gradient_clip: 5.0
+  patience: 15

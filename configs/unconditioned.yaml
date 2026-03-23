@@ -1,0 +1,33 @@
+# Unconditioned HTDemucs (no score information).
+# Used for both training and evaluation/separation.
+run:
+  name: unconditioned
+
+dataset:
+  manifest: manifests/guitarrecordings.json
+  train_split: train
+  valid_split: valid
+  test_split: test
+  normalize: true
+
+model:
+  name: htdemucs
+  kwargs:
+    segment: 4
+    note_conditioning: false
+    sources:
+      - guitar1
+      - guitar2
+
+audio:
+  segment_seconds: 4
+
+training:
+  epochs: 300
+  batch_size: 4
+  learning_rate: 0.0003
+  checkpoint_interval: 5
+  use_sum_loss: false
+  use_amp: true
+  gradient_clip: 5.0
+  patience: 30

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.metadata import build_manifest_from_split_roots
 from src.utils.io import load_config
@@ -22,10 +19,9 @@ def main() -> None:
     config = load_config(args.config)
     split_roots = config["splits"]
     output_path = repo_root / config["manifest_output"]
-    build_manifest_from_split_roots(split_roots, output_path)
+    build_manifest_from_split_roots(split_roots, output_path, repo_root=repo_root)
     print(f"Wrote manifest to {output_path}")
 
 
 if __name__ == "__main__":
     main()
-

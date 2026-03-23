@@ -180,46 +180,44 @@ def evaluate_predictions(
                 )
                 print(f"  -> {msg}")
                 skipped_bss_eval_tracks[track_name] = msg
-            else:
-                print("  -> computing museval BSS metrics")
-                sdr, sir, isr, sar, permutation = museval.metrics.bss_eval(
-                    references_museval,
-                    estimates_museval,
-                    compute_permutation=True,
-                    window=int(1.0 * sr_ref),
-                    hop=int(1.0 * sr_ref),
-                    framewise_filters=False,
-                    bsseval_sources_version=False,
-                )
+                continue
 
-                print(f"  -> museval permutation={permutation}")
+            print("  -> computing museval BSS metrics")
+            sdr, sir, isr, sar, permutation = museval.metrics.bss_eval(
+                references_museval,
+                estimates_museval,
+                compute_permutation=True,
+                window=int(1.0 * sr_ref),
+                hop=int(1.0 * sr_ref),
+                framewise_filters=False,
+                bsseval_sources_version=False,
+            )
 
-                permutation = np.asarray(permutation).reshape(-1).astype(int)
-                inv_perm = np.argsort(permutation)
-                estimates_aligned = estimates[:, inv_perm, :]
+            print(f"  -> museval permutation={permutation}")
 
-                # print(f"  -> aligned estimate shape for SI-SDR={estimates_aligned.shape}")
-                print("  -> computing SI-SDR")
+            permutation = np.asarray(permutation).reshape(-1).astype(int)
+            inv_perm = np.argsort(permutation)
+            estimates_aligned = estimates[:, inv_perm, :]
 
-                sisdr_scores_aligned = si_sdr(
-                    estimated_sources=estimates_aligned,
-                    reference_sources=references,
-                    window=int(1.0 * sr_ref),
-                    hop=int(1.0 * sr_ref),
-                )
-                
-                num_windows = sdr.shape[1]
-                
-                track_metrics = {}
+            print("  -> computing SI-SDR")
 
-                for idx, source in enumerate(source_names):
-                    track_metrics[source] = {
-                        "SDR": np.asarray(sdr[idx], dtype=np.float64).tolist(),
-                        "SIR": np.asarray(sir[idx], dtype=np.float64).tolist(),
-                        "ISR": np.asarray(isr[idx], dtype=np.float64).tolist(),
-                        "SAR": np.asarray(sar[idx], dtype=np.float64).tolist(),
-                        "SI-SDR": np.asarray(sisdr_scores_aligned[idx], dtype=np.float64).tolist(),
-                    }
+            sisdr_scores_aligned = si_sdr(
+                estimated_sources=estimates_aligned,
+                reference_sources=references,
+                window=int(1.0 * sr_ref),
+                hop=int(1.0 * sr_ref),
+            )
+
+            track_metrics = {}
+
+            for idx, source in enumerate(source_names):
+                track_metrics[source] = {
+                    "SDR": np.asarray(sdr[idx], dtype=np.float64).tolist(),
+                    "SIR": np.asarray(sir[idx], dtype=np.float64).tolist(),
+                    "ISR": np.asarray(isr[idx], dtype=np.float64).tolist(),
+                    "SAR": np.asarray(sar[idx], dtype=np.float64).tolist(),
+                    "SI-SDR": np.asarray(sisdr_scores_aligned[idx], dtype=np.float64).tolist(),
+                }
 
             for source in source_names:
                 results.setdefault(source, {})

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import torch
@@ -10,8 +9,6 @@ from torch.utils.data import DataLoader, random_split
 from _bootstrap import bootstrap
 
 repo_root = bootstrap()
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from src.data.dataset import GuitarDataset
 from src.data.manifests import load_manifest
@@ -28,128 +25,136 @@ def describe_dataset(label: str, entries: list[dict]) -> None:
 
 
 def conditioning_label(model_kwargs: dict) -> str:
-    time_conditioning = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
-    freq_conditioning = model_kwargs.get("freq_conditioning", False)
-    if time_conditioning and freq_conditioning:
+    time_cond = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
+    freq_cond = model_kwargs.get("freq_conditioning", False)
+    if time_cond and freq_cond:
         return "time+freq"
-    if time_conditioning:
+    if time_cond:
         return "time"
-    if freq_conditioning:
+    if freq_cond:
         return "freq"
     return "none"
 
 
 def uses_notes(model_kwargs: dict) -> bool:
-    time_conditioning = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
-    freq_conditioning = model_kwargs.get("freq_conditioning", False)
-    return time_conditioning or freq_conditioning
+    time_cond = model_kwargs.get("time_conditioning", model_kwargs.get("note_conditioning", False))
+    freq_cond = model_kwargs.get("freq_conditioning", False)
+    return time_cond or freq_cond
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train a source separation model.")
     parser.add_argument("--config", required=True, help="Path to experiment config.")
+    parser.add_argument("--checkpoint", default=None,
+                        help="Path to a .pt checkpoint to warm-start from.")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for reproducibility (default: 42).")
+    parser.add_argument("--num-workers", type=int, default=4,
+                        help="DataLoader worker processes (default: 4).")
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     config = load_config(args.config)
     model_kwargs = config["model"].get("kwargs", {})
-    manifest_entries = load_manifest(repo_root / config["dataset"]["manifest"])
-    train_entries = [entry for entry in manifest_entries if entry["split"] == config["dataset"]["train_split"]]
-    valid_entries = [entry for entry in manifest_entries if entry["split"] == config["dataset"]["valid_split"]]
+    manifest_entries = load_manifest(repo_root / config["dataset"]["manifest"], resolve_root=repo_root)
+    train_entries = [e for e in manifest_entries if e["split"] == config["dataset"]["train_split"]]
+    valid_entries = [e for e in manifest_entries if e["split"] == config["dataset"]["valid_split"]]
+
+    run_name = config["run"]["name"]
+    note_mode = uses_notes(model_kwargs)
 
     print("Training configuration")
-    print(f"config: {args.config}")
-    print(f"run name: {config['run']['name']}")
-    print(f"model: {config['model']['name']}")
-    print(f"segment seconds: {config['audio']['segment_seconds']}")
-    print(f"batch size: {config['training']['batch_size']}")
-    print(f"epochs: {config['training']['epochs']}")
-    print(f"learning rate: {config['training'].get('learning_rate', 3e-4)}")
-    print(f"use sum loss: {config['training'].get('use_sum_loss', False)}")
-    print(f"conditioning: {conditioning_label(config['model'].get('kwargs', {}))}")
-    print(f"normalize: {config['dataset']['normalize']}")
-    print(f"manifest entries: {len(manifest_entries)}")
-    describe_dataset("train split", train_entries)
+    print(f"  config:           {args.config}")
+    print(f"  run name:         {run_name}")
+    print(f"  model:            {config['model']['name']}")
+    print(f"  segment:          {config['audio']['segment_seconds']}s")
+    print(f"  batch size:       {config['training']['batch_size']}")
+    print(f"  epochs:           {config['training']['epochs']}")
+    print(f"  learning rate:    {config['training'].get('learning_rate', 3e-4)}")
+    print(f"  conditioning:     {conditioning_label(model_kwargs)}")
+    print(f"  seed:             {args.seed}")
+    describe_dataset("  train", train_entries)
     if valid_entries:
-        describe_dataset("valid split", valid_entries)
+        describe_dataset("  valid", valid_entries)
     else:
-        print("valid split: not provided, using random split from train split")
+        print("  valid: random 80/20 split from train")
 
     if not valid_entries:
         dataset = GuitarDataset(
-            train_entries,
-            sample_length=config["audio"]["segment_seconds"],
-            normalize=config["dataset"]["normalize"],
-            use_notes=uses_notes(model_kwargs),
+            train_entries, sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"], use_notes=note_mode,
         )
         train_size = int(len(dataset) * 0.8)
         valid_size = len(dataset) - train_size
-        train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
-        print(f"random split samples: train={len(train_dataset)} valid={len(valid_dataset)}")
+        generator = torch.Generator().manual_seed(args.seed)
+        train_dataset, valid_dataset = random_split(
+            dataset, [train_size, valid_size], generator=generator)
     else:
         train_dataset = GuitarDataset(
-            train_entries,
-            sample_length=config["audio"]["segment_seconds"],
-            normalize=config["dataset"]["normalize"],
-            use_notes=uses_notes(model_kwargs),
+            train_entries, sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"], use_notes=note_mode,
         )
         valid_dataset = GuitarDataset(
-            valid_entries,
-            sample_length=config["audio"]["segment_seconds"],
-            normalize=config["dataset"]["normalize"],
-            use_notes=uses_notes(model_kwargs),
+            valid_entries, sample_length=config["audio"]["segment_seconds"],
+            normalize=config["dataset"]["normalize"], use_notes=note_mode,
         )
-        print(f"dataset samples: train={len(train_dataset)} valid={len(valid_dataset)}")
 
-    train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
-    valid_loader = DataLoader(valid_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
-    print(f"dataloader batches: train={len(train_loader)} valid={len(valid_loader)}")
+    print(f"  samples: train={len(train_dataset)} valid={len(valid_dataset)}")
+
+    train_loader = DataLoader(
+        train_dataset, batch_size=config["training"]["batch_size"], shuffle=True,
+        num_workers=args.num_workers, pin_memory=torch.cuda.is_available(),
+        persistent_workers=args.num_workers > 0,
+    )
+    valid_loader = DataLoader(
+        valid_dataset, batch_size=config["training"]["batch_size"], shuffle=False,
+        num_workers=args.num_workers, pin_memory=torch.cuda.is_available(),
+        persistent_workers=args.num_workers > 0,
+    )
 
     model = build_model(config["model"]["name"], model_kwargs)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    checkpoint_path = repo_root / "artifacts" / "checkpoints" / "best_conditioned.pt"
+    if args.checkpoint:
+        ckpt_path = Path(args.checkpoint)
+        if not ckpt_path.exists():
+            print(f"WARNING: checkpoint not found at {ckpt_path}, training from scratch.")
+        else:
+            state = torch.load(ckpt_path, map_location=device, weights_only=True)
+            model.load_state_dict(state.get("model_state_dict", state))
+            print(f"  loaded checkpoint: {ckpt_path}")
 
-    if checkpoint_path.exists():
-        # map_location ensures it loads correctly even if weights were saved on a different device
-        state_dict = torch.load(checkpoint_path, map_location=device)
-        
-        # If the checkpoint contains only the model weights:
-        model.load_state_dict(state_dict)
-        
-        # If the checkpoint was saved as a dict with 'model_state_dict':
-        # model.load_state_dict(state_dict['model_state_dict'])
-        
-        print(f"Successfully preloaded weights from {checkpoint_path}")
-    else:
-        print(f"Warning: Checkpoint not found at {checkpoint_path}. Training from scratch.")
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"  device: {device}  params: {total_params:,} ({trainable:,} trainable)")
 
-    parameter_count = sum(parameter.numel() for parameter in model.parameters())
-    trainable_parameter_count = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
-    print(f"device: {device}")
-    print(f"model parameters: total={parameter_count:,} trainable={trainable_parameter_count:,}")
+    checkpoints_dir = repo_root / "outputs" / "checkpoints" / run_name
+    log_dir = repo_root / "outputs" / "logs" / run_name
 
-    checkpoints_dir = repo_root / "artifacts" / "checkpoints" / config["run"]["name"]
-    log_dir = repo_root / "artifacts" / "logs" / config["run"]["name"]
-    print(f"checkpoints dir: {checkpoints_dir}")
-    print(f"log dir: {log_dir}")
     train_config = TrainConfig(
         epochs=config["training"]["epochs"],
         learning_rate=config["training"].get("learning_rate", 3e-4),
         use_sum_loss=config["training"].get("use_sum_loss", False),
         checkpoint_interval=config["training"].get("checkpoint_interval", 5),
-        use_notes=uses_notes(model_kwargs),
+        use_notes=note_mode,
+        use_amp=config["training"].get("use_amp", True),
+        patience=config["training"].get("patience", 0),
+        gradient_clip=config["training"].get("gradient_clip", 5.0),
     )
+    print(f"  AMP={train_config.use_amp}  grad_clip={train_config.gradient_clip}  "
+          f"patience={train_config.patience if train_config.patience > 0 else 'off'}")
+    print()
+
     history = train_model(
-        model,
-        train_loader,
-        valid_loader,
-        checkpoints_dir=checkpoints_dir,
-        log_dir=log_dir,
-        config=train_config,
-        device=device,
+        model, train_loader, valid_loader,
+        checkpoints_dir=checkpoints_dir, log_dir=log_dir,
+        config=train_config, device=device,
     )
-    print(f"Training finished. History entries: {len(history)}")
+    print(f"Training finished. {len(history)} epochs completed.")
 
 
 if __name__ == "__main__":

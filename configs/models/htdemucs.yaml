@@ -1,7 +1,0 @@
-name: htdemucs
-kwargs:
-  segment: 4
-  sources:
-    - guitar1
-    - guitar2
-
