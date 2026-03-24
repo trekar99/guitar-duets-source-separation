@@ -107,7 +107,7 @@ def train_one_epoch(
         )
         optimizer.zero_grad(set_to_none=True)
 
-        with autocast(device_type=device.type, enabled=use_amp):
+        with torch.amp.autocast(device_type=device.type, enabled=use_amp):
             outputs = model(mixture, notes) if use_notes else model(mixture)
             outputs = outputs.view(outputs.size(0), 2, 2, outputs.size(-1))
             labels  = center_trim(labels, outputs)
