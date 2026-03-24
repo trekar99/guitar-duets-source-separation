@@ -13,7 +13,7 @@ dependencies = [
   "julius>=0.2.3",
   "matplotlib",
   "mido",
-  "museval>=0.4.0",
+  "mir_eval",
   "numpy<2",
   "omegaconf",
   "openunmix",
@@ -28,10 +28,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+improvements = [
+  "basic-pitch[torch]",  # Python <=3.12 only; TF has no 3.13 wheel
+  "librosa",
+]
 dev = [
   "ipykernel",
   "ipywidgets",
-  "librosa",
   "jupyter",
 ]
 

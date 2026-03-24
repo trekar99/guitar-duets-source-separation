@@ -14,11 +14,12 @@ dependencies:
   - pip
   - pip:
     - asteroid
+    - "basic-pitch[torch]"
     - einops
     - julius>=0.2.3
     - matplotlib
     - mido
-    - museval>=0.4.0
+    - mir_eval
     - "numpy<2"
     - omegaconf
     - openunmix

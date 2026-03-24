@@ -1,7 +1,13 @@
 import os
 import mido
-from basic_pitch.inference import predict
 import librosa
+
+try:
+    from basic_pitch.inference import predict as _bp_predict
+    _HAS_BASIC_PITCH = True
+except ImportError:
+    _HAS_BASIC_PITCH = False
+    _bp_predict = None
 
 INPUT_FOLDER = "dataset/Real/test"
 TICKS_PER_BEAT = 480  # standard PPQ
@@ -56,6 +62,12 @@ def estimate_bpm(audio_path):
     return float(tempo)
 
 def process_file(file_path):
+    if not _HAS_BASIC_PITCH:
+        raise RuntimeError(
+            "basic-pitch is required for scripts/transcribe.py but is not installed.\n"
+            "Install it on Python ≤3.12:  pip install 'basic-pitch[torch]'"
+        )
+
     print(f"\nProcessing {file_path} ...")
     BPM = estimate_bpm(file_path)
     print(f"Estimated BPM: {BPM:.2f}")
@@ -63,7 +75,7 @@ def process_file(file_path):
     filename_lower = os.path.basename(file_path).lower()
     instrument_name = "guitar1" if "guitar1" in filename_lower else "guitar2" if "guitar2" in filename_lower else "unknown"
 
-    model_output, midi_data, note_events = predict(file_path)
+    _, _, note_events = _bp_predict(file_path)
     print(f"Detected {len(note_events)} notes")
 
     mid = mido.MidiFile(ticks_per_beat=TICKS_PER_BEAT)
