@@ -99,7 +99,7 @@ python scripts/evaluate.py --config configs/unconditioned.yaml --predictions out
 |---|---|---|---|
 | 1 | Basic Pitch + Heuristic Pitch Splitting | Inference optimization | No |
 | 2 | MIDI-Guided Post-Processing Audio Masking | Post-processing | No |
-| 3 | NoteJitter Temporal Misalignment Augmentation | Training augmentation | Yes (fine-tuning) |
+| 3 | Misaligned Data Augmentation & Synchronized Transforms | Training augmentation | Yes (fine-tuning) |
 
 ## Citation
 
