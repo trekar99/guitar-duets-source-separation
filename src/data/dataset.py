@@ -2,9 +2,10 @@ from __future__ import annotations
 import math
 import pandas as pd
 import torch
-import torchaudio
 from torch.nn import functional as F
 from torch.utils.data import Dataset
+
+from src.utils.audio import load_audio
 
 class GuitarDataset(Dataset):
     def __init__(
@@ -32,9 +33,9 @@ class GuitarDataset(Dataset):
             # 1. Pre-load Audio Stems
             if preload_to_memory:
                 # Load: [Channels, Time]
-                mix, _ = torchaudio.load(entry["mix"])
-                g1, _ = torchaudio.load(entry["sources"]["guitar1"])
-                g2, _ = torchaudio.load(entry["sources"]["guitar2"])
+                mix, _ = load_audio(entry["mix"])
+                g1, _ = load_audio(entry["sources"]["guitar1"])
+                g2, _ = load_audio(entry["sources"]["guitar2"])
                 
                 # Stack to: [3, Channels, Time]
                 full_audio = torch.stack([mix, g1, g2])

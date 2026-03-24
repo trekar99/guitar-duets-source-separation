@@ -3,13 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import museval
 import numpy as np
-import torchaudio
 
+from src.evaluation.bss import windowed_bss_eval
 from src.evaluation.sisdr import si_sdr
 from src.evaluation.summarize import summarize_results
-from src.utils.audio import find_audio_file
+from src.utils.audio import find_audio_file, load_audio
 
 
 def _load_stacked_sources(
@@ -29,7 +28,7 @@ def _load_stacked_sources(
     num_channels = None
 
     for path in source_paths:
-        waveform, sr = torchaudio.load(str(path))  # (channels, time)
+        waveform, sr = load_audio(path)  # (channels, time)
 
         # print(
         #     f"    [{track_name}] loaded {label} file {path} "
@@ -160,12 +159,9 @@ def evaluate_predictions(
 
             # print(f"  -> after length align: references={references.shape}, estimates={estimates.shape}")
 
-            # museval expects (sources, time, channels)
-            references_museval = np.transpose(references, (1, 0, 2))
-            estimates_museval = np.transpose(estimates, (1, 0, 2))
-
-            # print(f"  -> museval reference shape={references_museval.shape}")
-            # print(f"  -> museval estimate  shape={estimates_museval.shape}")
+            # bss_eval expects (sources, time, channels)
+            references_bss = np.transpose(references, (1, 0, 2))
+            estimates_bss = np.transpose(estimates, (1, 0, 2))
 
             silent_reference_sources = [
                 source_names[idx]
@@ -182,18 +178,16 @@ def evaluate_predictions(
                 skipped_bss_eval_tracks[track_name] = msg
                 continue
 
-            print("  -> computing museval BSS metrics")
-            sdr, sir, isr, sar, permutation = museval.metrics.bss_eval(
-                references_museval,
-                estimates_museval,
-                compute_permutation=True,
+            print("  -> computing BSS metrics")
+            sdr, sir, isr, sar, permutation = windowed_bss_eval(
+                references_bss,
+                estimates_bss,
                 window=int(1.0 * sr_ref),
                 hop=int(1.0 * sr_ref),
-                framewise_filters=False,
-                bsseval_sources_version=False,
+                compute_permutation=True,
             )
 
-            print(f"  -> museval permutation={permutation}")
+            print(f"  -> permutation={permutation}")
 
             permutation = np.asarray(permutation).reshape(-1).astype(int)
             inv_perm = np.argsort(permutation)

@@ -1,5 +1,7 @@
 asteroid
-basic-pitch
+# basic-pitch requires TensorFlow which has no Python 3.13 wheel.
+# Install separately on Python <=3.12:  pip install "basic-pitch[torch]"
+# The improvement notebooks fall back to librosa-based pitch detection automatically.
 einops
 ipykernel
 ipywidgets
@@ -7,7 +9,7 @@ julius>=0.2.3
 librosa
 matplotlib
 mido
-museval>=0.4.0
+mir_eval
 numpy<2
 omegaconf
 openunmix

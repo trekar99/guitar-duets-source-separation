@@ -3,10 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import torch
-import torchaudio
 
 from src.data.manifests import save_manifest
-from src.utils.audio import find_audio_file
+from src.utils.audio import find_audio_file, load_audio
 
 
 def build_track_entry(track_dir: str | Path, split: str, repo_root: Path | None = None) -> dict:
@@ -16,7 +15,7 @@ def build_track_entry(track_dir: str | Path, split: str, repo_root: Path | None 
     guitar2_path = find_audio_file(track_path, "guitar2")
     notes_csv_path = track_path / "notes.csv"
 
-    waveform, sample_rate = torchaudio.load(str(mix_path))
+    waveform, sample_rate = load_audio(mix_path)
     mean = torch.mean(waveform).item()
     std = torch.std(waveform).item()
 
